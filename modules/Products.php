@@ -1144,6 +1144,6 @@ function ims_create_units_table() {
         UNIQUE KEY name (name)
     ) $charset_collate;";
     
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    // require_once(ABSPATH . 'wp-admin/includes/upgrade.php'); // Removed legacy WP dependency
     dbDelta($sql);
 }
