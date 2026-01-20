@@ -55,6 +55,13 @@ class Router {
         // Debug
         // error_log("Dispatching URI: $uri");
 
+        // Global Auth Check (Middleware)
+        global $auth;
+        $headers = getallheaders();
+        if (isset($headers['Authorization']) && preg_match('/Bearer\s+(.*)$/i', $headers['Authorization'], $matches)) {
+            $auth->validate_session($matches[1]);
+        }
+        
         foreach ($this->routes as $route) {
             // WP Routes are regexes usually, e.g. /products/(?P<id>\d+)
             // We need to enclose in delimiters.
@@ -158,12 +165,43 @@ function remove_filter($tag, $function_to_remove, $priority = 10) {
     // No-op
 }
 
+
+// Initialize Auth
+require_once __DIR__ . '/AuthCore.php';
+
 function is_user_logged_in() {
-    return true; 
+    global $auth;
+    // Check headers/session if not already checked
+    // We expect middleware to run before this is called in business logic.
+    // Ideally, we run middleware at dispatch time.
+    // For is_user_logged_in to work anywhere, we might need to lazy load validation.
+    
+    // Check if we have a current user;
+    if ($auth->get_current_user()) return true;
+    
+    // Attempt validation from headers now?
+    $headers = getallheaders();
+    $token = null;
+    if (isset($headers['Authorization'])) {
+        if (preg_match('/Bearer\s+(.*)$/i', $headers['Authorization'], $matches)) {
+            $token = $matches[1];
+        }
+    }
+    return $auth->validate_session($token);
 }
 
 function wp_get_current_user() {
-    return (object) ['ID' => 1, 'user_login' => 'admin'];
+    global $auth;
+    $user = $auth->get_current_user();
+    if ($user) return $user;
+    
+    // Return empty user object if not logged in
+    return (object) ['ID' => 0, 'user_login' => '', 'roles' => []];
+}
+
+function current_user_can($permission) {
+    global $auth;
+    return $auth->check_permission($permission);
 }
 
 function get_site_url() {

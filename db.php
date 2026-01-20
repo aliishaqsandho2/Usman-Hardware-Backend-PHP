@@ -3,7 +3,7 @@
 require_once 'config.php';
 
 class DB {
-    private $mysqli;
+    public $mysqli;
     public $prefix = 'uh_'; // As seen in user sql output (uh_ims_...)
     public $last_error = '';
     public $insert_id = 0;
